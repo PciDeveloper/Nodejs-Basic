@@ -70,3 +70,30 @@ app.get('/list', (req, res) => {
         res.render('list.ejs', { posts : result });
     }); 
 });
+
+// ajax delete 삭제 요청이 왔을 때
+app.delete('/delete', (req, res) => {
+    console.log(req.body);
+    req.body._id = parseInt(req.body._id); // ajax 로 보낼 때 int 로 보냈지만 값이 넘어올 때 스트링으로 왔으므로 int 로 다시 변환
+    // req.body에 담겨온 게시물 번호를 가진 글을 db 에서 찾아서 삭제
+    db.collection('post').deleteOne(req.body, function(err, result) {
+        console.log('삭제완료');
+        res.status(200).send({ message : 'DB 삭제처리 성공 !!!' });
+    });
+});
+
+app.get('/detail/:id', (req, res) => {
+    // req.params.id => url에 파라미터중에서 id 라고 이름지은 파라미터를 넣어주세요
+    // 그러나 db post 라는 파일에 있는 데이터 중 _id 는 int 이므로 int 로 변환을 시켜줘야함
+    db.collection('post').findOne( { _id : parseInt(req.params.id)}, function(err, result) { 
+        if(result){
+            console.log(result);
+            res.render('detail.ejs', { data : result});
+            res.render('list.ejs', { data : result});
+        } else {
+            console.log('결과가 없습니다.');
+            res.send('결과가 없습니다.');
+
+        }
+    });
+});
