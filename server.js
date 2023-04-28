@@ -88,11 +88,10 @@ app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
     // 그러나 db post 라는 파일에 있는 데이터 중 _id 는 int 이므로 int 로 변환을 시켜줘야함
     db.collection('post').findOne( { _id : parseInt(req.params.id)}, function(err, result) { 
         if(result){
-            res.render('detail.ejs', { data : result});
+            res.render('detail.ejs', { data : result }); // ejs 파일에 값 넘길 때 object 형식으로 값이 전달됨
         } else {
             console.log('결과가 없습니다.');
             res.send('결과가 없습니다.');
-
         }
     });
 });
