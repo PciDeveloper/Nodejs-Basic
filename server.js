@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended : true })); // body 부분 예를들어 input 에서 요청한 데이터 해석을 쉽게 도와주는 라이브러리 bodyParser
 const MongoClient = require('mongodb').MongoClient;
 app.set('view engine', 'ejs'); // html 말고도 ejs 파일을 사용할 수 있는데 서버 데이터를 집어넣을 수가 있음 <%=  %> 이런 방식 views 폴더 만들고 그 안에서 작업
+app.use('/public', express.static('public')); // 미들웨어 => static 파일을 보관하기 위해 public 폴더를 사용한다고 명시
 
 var db;
 MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
@@ -26,11 +27,11 @@ app.get('/beauty', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.render('index.ejs');
 });
 
 app.get('/write', (req, res) => {
-    res.sendFile(__dirname + '/write.html');
+    res.render('write.ejs');
 });
 
 // collection 은 필요할 때 가져다 쓰면 됨
@@ -66,7 +67,7 @@ app.post('/add', (req, res) => { // form 태그에서 post 방식으로 /add 요
 app.get('/list', (req, res) => {
     // database 에 저장된 post 라는 collection 안에 모든 데이터를 꺼내는 방법
     db.collection('post').find().toArray( (err, result) => {
-        console.log(result);
+        // console.log(result);
         res.render('list.ejs', { posts : result });
     }); 
 });
@@ -82,14 +83,12 @@ app.delete('/delete', (req, res) => {
     });
 });
 
-app.get('/detail/:id', (req, res) => {
+app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
     // req.params.id => url에 파라미터중에서 id 라고 이름지은 파라미터를 넣어주세요
     // 그러나 db post 라는 파일에 있는 데이터 중 _id 는 int 이므로 int 로 변환을 시켜줘야함
     db.collection('post').findOne( { _id : parseInt(req.params.id)}, function(err, result) { 
         if(result){
-            console.log(result);
             res.render('detail.ejs', { data : result});
-            res.render('list.ejs', { data : result});
         } else {
             console.log('결과가 없습니다.');
             res.send('결과가 없습니다.');
