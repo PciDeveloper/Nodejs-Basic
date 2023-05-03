@@ -25,6 +25,7 @@
               <!-- <h4 class="title" style="cursor: pointer;" data-id="<%= posts[i]._id %>">할일 제목 : <%= posts[i].제목 %> </h4> 방식 2 -->
               <p>할일 마감 날짜 : <%= posts[i].날짜 %> </p>
               <button class="delete btn btn-danger" data-id="<%= posts[i]._id %>">삭제</button>
+              <button class="update btn btn-danger" data-id="<%= posts[i]._id %>">수정</button>
             </li>
           <% } %>
         </ul>
@@ -53,6 +54,10 @@
 
         $('.title').on('click', function(e) {
           location.href = `/detail/${e.target.dataset.id}`
+        });
+
+        $('.update').on('click', function(e) {
+          location.href = `/update/${e.target.dataset.id}`
         });
         
       </script>
