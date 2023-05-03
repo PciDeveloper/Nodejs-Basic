@@ -8,7 +8,8 @@ app.use(methodOverride('_method'));
 app.set('view engine', 'ejs'); // html 말고도 ejs 파일을 사용할 수 있는데 서버 데이터를 집어넣을 수가 있음 <%=  %> 이런 방식 views 폴더 만들고 그 안에서 작업
 app.use('/public', express.static('public')); // 미들웨어 => static 파일을 보관하기 위해 public 폴더를 사용한다고 명시
 
-var db;
+var db; // 전역변수
+
 MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
     //연결되면 할 일
     if(err) return console.log(err);
@@ -16,16 +17,7 @@ MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retry
 
     app.listen(8080, () => {
         console.log('listening on 8080');
-
-    });
-});
-
-app.get('/pet', (req, res) => {
-    res.send("고양이 용품 판매 페이지입니다.");
-});
-
-app.get('/beauty', (req, res) => {
-    res.send("화장품 판매 페이지입니다.");
+    }); // listen
 });
 
 app.get('/', (req, res) => {
@@ -38,7 +30,7 @@ app.get('/write', (req, res) => {
 
 // collection 은 필요할 때 가져다 쓰면 됨
 // post 요청으로 서버에 데이터 전송하고 싶으면 bodyParser 라이브러리 install
-app.post('/add', (req, res) => { // form 태그에서 post 방식으로 /add 요청이 있을 시
+app.post('/insert', (req, res) => { // form 태그에서 post 방식으로 /insert 요청이 있을 시
     res.send('전송 완료'); // 전송완료라는 응답을 해줌
     console.log(req.body.title); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
     console.log(req.body.date); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
@@ -52,7 +44,6 @@ app.post('/add', (req, res) => { // form 태그에서 post 방식으로 /add 요
         // 위에서 결과를 담은 변수를 _id 에 + 1 시켜서 부여함 
         db.collection('post').insertOne({ _id : totalCount + 1, 제목 : req.body.title, 날짜 : req.body.date }, function(err, result) {
             console.log('저장 완료');
-
             // counter 라는 db 폴더에 따로 관리하는 totalPost : 0 데이터에도 + 1 증가시켜주는 로직
             // updateOne({어떤 데이터를 수정할지}, {수정할 값}, function(에러, 결과){})
             // 연산자 (operator) 종류
@@ -63,9 +54,9 @@ app.post('/add', (req, res) => { // form 태그에서 post 방식으로 /add 요
                 if(err) {
                     return console.log(err); 
                 }
-            });
-        });
-    });
+            }); // updateOne
+        }); // insertOne
+    }); // findOne
 });
 
 app.get('/list', (req, res) => {
@@ -84,7 +75,7 @@ app.delete('/delete', (req, res) => {
     db.collection('post').deleteOne(req.body, function(err, result) {
         console.log('삭제완료');
         res.status(200).send({ message : 'DB 삭제처리 성공 !!!' });
-    });
+    }); // deleteOne
 });
 
 app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
@@ -97,10 +88,10 @@ app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
             console.log('찾으시는 데이터가 없습니다.');
             res.render('404.ejs');
         }
-    });
+    }); // findOne
 });
 
-
+// url 에 id 값 요청이 있을 때
 app.get('/update/:id', function(req, res) {
     db.collection('post').findOne( { _id : parseInt(req.params.id) }, function(err, result) {
         if(result) {
@@ -110,9 +101,10 @@ app.get('/update/:id', function(req, res) {
             console.log('찾으시는 데이터가 없습니다.');
             res.render('404.ejs');
         }
-    });
+    }); // findOne
 });
 
+// update 수정 작업
 app.put('/update', (req, res) => {
     // updateOnde( {어떤게시물을 수정할건지}, {수정값}, {콜백함수} )
     // form 에서 전송한 제목, 날짜로 db.collection('post') 에서 게시물 찾아서 업데이트 처리
@@ -121,5 +113,5 @@ app.put('/update', (req, res) => {
     db.collection('post').updateOne( { _id : parseInt(req.body.id) }, { $set : { 제목 : req.body.title, 날짜 : req.body.date } }, function() {
         console.log('수정완료');
         res.redirect('/list');
-    });
+    }); // updateOne
 });
