@@ -127,8 +127,93 @@ app.put('/update', (req, res) => {
     }); // updateOne
 });
 
-// 로그인
-app.get('/login', (req, res) => {
-   res.render('/login.ejs');
+app.get('/login', function (req, res) {
+    res.render('login.ejs');
+})
+
+// passport 라이브러리 미들웨어 사용하여 local 방식으로 검사, 검사하는 코드는 바로 아래 로직
+// 로그인을 시도하면 아이디, 비밀번호 검사
+// failureRedirect 회원 인증 실패시 fale 경로 이동
+app.post('/login', passport.authenticate('local', { failureRedirect : '/fale'}), (req, res) => {
+    res.redirect('/');
 });
 
+// 회원가입
+app.get('/join', function (req, res) {
+    res.render('join.ejs');
+})
+
+app.post('/join', passport.authenticate('local', { failureRedirect : '/fale'}), (req, res) => {
+    console.log(req.body.id); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
+    console.log(req.body.pw); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
+    res.redirect('/');
+});
+
+// 아이디, 비밀번호를 검사하는 로직
+// 로그인 post 요청, form 을 전송할 때 검사해주는 로직
+// LocalStrategy => 인증하는 방법
+// done() => 3개의 파라미터를 사용함. done(서버에러, 성공시 사용자 db 데이터) 
+passport.use(new LocalStrategy({
+    usernameField : 'id', // input name = id
+    passwordField : 'pw', // input name = pw
+    session : true, // 로그인 후 세션을 저장할 것인지 여부
+    passReqToCallback : false,
+}, function (입력한아이디, 입력한비밀번호, done) {
+    console.log(입력한아이디, 입력한비밀번호);
+    db.collection('member').findOne({ id : 입력한아이디}, function (err, result) {
+        if (err) return done(err);
+        if (!result) return done(null, false, {message : '존재하지 않는 회원입니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
+        if (입력한비밀번호 == result.pw) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
+            return done(null, result); // 성공하면 result 에 결과를 뱉어냄
+        } else {
+            return done(null, false, { message : '비밀번호가 일치하지 않습니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
+        }
+    });
+
+    // db.collection('member').findOne({ id : 입력한아이디}, function (err, result) {
+    //     if (err) return done(err);
+    //     if (입력한아이디 == result.id) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
+    //         return done(null, false, { message : '이미 사용중인 아이디입니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
+    //     } else {
+    //         db.collection('member').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result) {
+    //             console.log('회원가입 성공');
+    //         }); // insertOne
+    //         return done(null, result); // 성공하면 result 에 결과를 뱉어냄
+    //     }
+    // });
+}));
+
+// 유저 정보를 세션에 저장시키는 로직 => 로그인 성공시 동작
+// 콜백 함수 안에 파라미터 user 는 위의 결과값 result 가 담겨있음 => id, pw 검증 성공 결과
+// 위에서 인증 성공하면 세션 + 쿠키 만들어줌
+passport.serializeUser(function (user, done) {
+    done(null, user.id);
+});
+
+// 나중에 호출되는 로직 (마이페이지 이동시 동작)
+// deserializeUser => 세션을 찾을 때 실행
+// db 에서 위에 있는 user.id 로 유저를 찾은 다음 그 정보를 {} 에 넣음
+// user.id == 아이디 동일한 데이터
+passport.deserializeUser(function (아이디, done) {
+    db.collection('member').findOne({ id : 아이디}, function (err, result) {
+        done(null, result);
+    });
+});
+
+// mypage 페이지 요청을 하면 loginChk 실행 후 응답
+// loginChk 미들웨어 사용법, 위에 로그인 할 때 같은 방법 사용 했었음
+// deserializeUser 에서 찾은 정보를 mypage.ejs 에 보내줌
+app.get('/mypage', loginChk, function (req, res) {
+    console.log(req.user);
+    res.render('mypage.ejs', { 사용자 : req.user }); // req.user => 아래 로직에 있는 user
+});
+
+// 미들웨어 만드는 방법
+// 로그인 후 세션이 있으면 요청.user 는 항상 있음
+function loginChk (req, res, next) {
+    if (req.user) { // 요청.user 가 있는지 ?
+        next(); // 통과
+    } else {
+        res.send('로그인 해주세요 !!!');
+    }
+}
