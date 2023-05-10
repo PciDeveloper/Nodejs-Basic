@@ -1,3 +1,5 @@
+
+// app.use(미들웨어) => 요청 - 응답 중간에 무언가 실행되는 코드
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -7,6 +9,15 @@ const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
 app.set('view engine', 'ejs'); // html 말고도 ejs 파일을 사용할 수 있는데 서버 데이터를 집어넣을 수가 있음 <%=  %> 이런 방식 views 폴더 만들고 그 안에서 작업
 app.use('/public', express.static('public')); // 미들웨어 => static 파일을 보관하기 위해 public 폴더를 사용한다고 명시
+
+// session 방식의 로그인 기능 구현 라이브러리
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const session = require('express-session');
+app.use(session({ secret : '비밀코드', resave : true, saveUninitialized : false}));  // secret 세션을 만들 때 비밀번호
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 var db; // 전역변수
 
@@ -115,3 +126,9 @@ app.put('/update', (req, res) => {
         res.redirect('/list');
     }); // updateOne
 });
+
+// 로그인
+app.get('/login', (req, res) => {
+   res.render('/login.ejs');
+});
+
