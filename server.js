@@ -113,7 +113,7 @@ app.get('/update/:id', function(req, res) {
             res.render('404.ejs');
         }
     }); // findOne
-});
+}); // update
 
 // update 수정 작업
 app.put('/update', (req, res) => {
@@ -127,6 +127,30 @@ app.put('/update', (req, res) => {
     }); // updateOne
 });
 
+// 회원가입
+app.get('/join', function (req, res) {
+    res.render('join.ejs');
+});
+
+app.post('/join', (req, res) => {
+    console.log(req.body.id); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
+    console.log(req.body.pw); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
+
+    db.collection('member').findOne({ id : req.body.id }, function (err, result) {
+        // form 에 담겨져 온 req.body.id 값이 db 에 있는지 없는지 결과 result 에 담김
+        // 그 result 값이 null 이 아니거나, form 데이터 (req.body.id) 와 결과 값 중 id 와 같으면, 즉 폼 데이터가 디비에 있는 데이터와 같으면 아이디 중복
+        // 정리하면.. req.body.id 폼 데이터를 조회했을 때 결과값이 있고, db 에도 값이 있으면 아이디 중복
+        if (result !== null && req.body.id === result.id) { 
+            console.log('아이디 중복');
+            return false;
+        } else {
+            db.collection('member').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result) {
+                console.log('회원가입 성공');
+            }); // insertOne
+        }
+    }); // findOne
+}); // join
+
 app.get('/login', function (req, res) {
     res.render('login.ejs');
 })
@@ -135,17 +159,6 @@ app.get('/login', function (req, res) {
 // 로그인을 시도하면 아이디, 비밀번호 검사
 // failureRedirect 회원 인증 실패시 fale 경로 이동
 app.post('/login', passport.authenticate('local', { failureRedirect : '/fale'}), (req, res) => {
-    res.redirect('/');
-});
-
-// 회원가입
-app.get('/join', function (req, res) {
-    res.render('join.ejs');
-})
-
-app.post('/join', passport.authenticate('local', { failureRedirect : '/fale'}), (req, res) => {
-    console.log(req.body.id); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
-    console.log(req.body.pw); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
     res.redirect('/');
 });
 
@@ -169,18 +182,6 @@ passport.use(new LocalStrategy({
             return done(null, false, { message : '비밀번호가 일치하지 않습니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
         }
     });
-
-    // db.collection('member').findOne({ id : 입력한아이디}, function (err, result) {
-    //     if (err) return done(err);
-    //     if (입력한아이디 == result.id) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
-    //         return done(null, false, { message : '이미 사용중인 아이디입니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
-    //     } else {
-    //         db.collection('member').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result) {
-    //             console.log('회원가입 성공');
-    //         }); // insertOne
-    //         return done(null, result); // 성공하면 result 에 결과를 뱉어냄
-    //     }
-    // });
 }));
 
 // 유저 정보를 세션에 저장시키는 로직 => 로그인 성공시 동작
