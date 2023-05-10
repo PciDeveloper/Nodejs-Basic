@@ -1,5 +1,6 @@
 
 // app.use(미들웨어) => 요청 - 응답 중간에 무언가 실행되는 코드
+const dotenv = require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -20,15 +21,15 @@ app.use(passport.session());
 
 
 var db; // 전역변수
-
-MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
+// MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
+    MongoClient.connect(process.env.DB_URL, function(err, client){ // 이와 같이 .env 파일 만들어서 관리
     //연결되면 할 일
     if(err) return console.log(err);
     db = client.db('todoapp'); // todoapp 이라는 database에 연결
 
     app.listen(8080, () => {
         console.log('listening on 8080');
-    }); // listen
+    });
 });
 
 app.get('/', (req, res) => {
@@ -209,12 +210,31 @@ app.get('/mypage', loginChk, function (req, res) {
     res.render('mypage.ejs', { 사용자 : req.user }); // req.user => 아래 로직에 있는 user
 });
 
-// 미들웨어 만드는 방법
+// 미들웨어 함수 만들기
 // 로그인 후 세션이 있으면 요청.user 는 항상 있음
 function loginChk (req, res, next) {
     if (req.user) { // 요청.user 가 있는지 ?
         next(); // 통과
     } else {
-        res.send('로그인 해주세요 !!!');
+        res.send('로그인 후 이용해주세요.');
     }
 }
+
+// list.ejs 에서 검색 후 search 요청이 왔을 때
+app.get('/search', (req, res) => {
+    // 기존에 body 안에 값을 가져올 때는 req.body.id 이런식으로 가져왔는데
+    // 서버에서 query string 을 꺼내올 때 query 로 꺼내옴
+    // req.query => { value: '게시물' }
+    // req.query.value 에서 .value 는 object 자료형에서 데이터를 꺼내는 방식 => 게시물
+    console.log(req.query.value);
+
+    // Binary Search 를 적용하려면 미리 숫자 정렬이 되어있어야 함
+    // mongodb 는 _id 순으로 미리 정렬이 되어있음
+    // index : 기존 collection 을 정렬 해 놓은 사본
+    // 미리 정렬해두면 (indexing) db 는 알아서 Binary Search 를 해줌
+    // indexing 하는 방법은 MongoDB Compass 에서 해당 거넥션 선택 후 indexes 클릭 후 create index
+    db.collection('post').find({ 제목 : req.query.value }).toArray((err, result) => {
+        console.log(result);
+        res.render('search.ejs', { search : result });
+    });
+});
