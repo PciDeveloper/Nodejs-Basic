@@ -233,7 +233,10 @@ app.get('/search', (req, res) => {
     // index : 기존 collection 을 정렬 해 놓은 사본
     // 미리 정렬해두면 (indexing) db 는 알아서 Binary Search 를 해줌
     // indexing 하는 방법은 MongoDB Compass 에서 해당 거넥션 선택 후 indexes 클릭 후 create index
-    db.collection('post').find({ 제목 : req.query.value }).toArray((err, result) => {
+    // $text, $search 연산자 (operator)
+    // db 에서 index 추가할 때 텍스트 text index 를 만들어 놓으면 자동적으로 쓸 수 있는 기능 => mongoDB 기능
+    // 하지만 text index 의 문제점은 띄어쓰기 기준으로 구별하기 때문에 한글 친화적이지 않음 => 글쓰기입니다 => 글쓰기로 검색하면 안나옴
+    db.collection('post').find({ $text: { $search : req.query.value } }).toArray((err, result) => {
         console.log(result);
         res.render('search.ejs', { search : result });
     });
