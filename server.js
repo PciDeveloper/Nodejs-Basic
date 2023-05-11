@@ -174,9 +174,9 @@ passport.use(new LocalStrategy({
     passReqToCallback : false,
 }, function (입력한아이디, 입력한비밀번호, done) {
     console.log(입력한아이디, 입력한비밀번호);
-    db.collection('member').findOne({ id : 입력한아이디}, function (err, result) {
+    db.collection('member').findOne( { id : 입력한아이디 }, function (err, result) {
         if (err) return done(err);
-        if (!result) return done(null, false, {message : '존재하지 않는 회원입니다.'} ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
+        if (!result) return done(null, false, { message : '존재하지 않는 회원입니다.' } ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
         if (입력한비밀번호 == result.pw) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
             return done(null, result); // 성공하면 result 에 결과를 뱉어냄
         } else {
