@@ -1,5 +1,6 @@
 
 // app.use(미들웨어) => 요청 - 응답 중간에 무언가 실행되는 코드
+// 즉, 미들웨어를 사용하고 싶을 때. 전역 미들웨어
 const dotenv = require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -76,14 +77,14 @@ app.put('/update', (req, res) => {
     // form 에서 전송한 제목, 날짜로 db.collection('post') 에서 게시물 찾아서 업데이트 처리
     // $set => 값을 바꿔주세요 요청을 하고싶을 때 사용 방법 => { $set : { totalPost : 바꿀 값 }}
     // req.body.id 에서 .id 는 form 에 담겨온 input 에 name 값을 말함
-    db.collection('post').updateOne( { _id : parseInt(req.body.id) }, { $set : { 제목 : req.body.title, 날짜 : req.body.date } }, function() {
+    db.collection('post').updateOne( { _id : parseInt(req.body.id) }, { $set : { 제목 : req.body.title, 날짜 : req.body.date } }, function(err, result) {
         console.log('수정완료');
         res.redirect('/list');
     }); // updateOne
 });
 
 // 회원가입
-app.get('/join', function (req, res) {
+app.get('/join', function(req, res) {
     res.render('join.ejs');
 });
 
@@ -91,7 +92,7 @@ app.post('/join', (req, res) => {
     console.log(req.body.id); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
     console.log(req.body.pw); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
 
-    db.collection('member').findOne( { id : req.body.id }, function (err, result) {
+    db.collection('member').findOne( { id : req.body.id }, function(err, result) {
         // form 에 담겨져 온 req.body.id 값이 db 에 있는지 없는지 결과 result 에 담김
         // 그 result 값이 null 이 아니거나, form 데이터 (req.body.id) 와 결과 값 중 id 와 같으면, 즉 폼 데이터가 디비에 있는 데이터와 같으면 아이디 중복
         // 정리하면.. req.body.id 폼 데이터를 조회했을 때 결과값이 있고, db 에도 값이 있으면 아이디 중복
@@ -107,7 +108,15 @@ app.post('/join', (req, res) => {
     }); // findOne
 }); // join
 
-app.get('/login', function (req, res) {
+// 회원가입 /join 로직 만들어놔서 이 부분은 사용 보류
+// 회원가입을 하면 로그인 컬렉션에 insert
+// app.post('/register', function(req, res) {
+//     db.collection('login').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
+//         res.redirect('/');
+//     });
+// });
+
+app.get('/login', function(req, res) {
     res.render('login.ejs');
 });
 
@@ -127,9 +136,9 @@ passport.use(new LocalStrategy({
     passwordField : 'pw', // input name = pw
     session : true, // 로그인 후 세션을 저장할 것인지 여부
     passReqToCallback : false,
-}, function (입력한아이디, 입력한비밀번호, done) {
+}, function(입력한아이디, 입력한비밀번호, done) {
     console.log(입력한아이디, 입력한비밀번호);
-    db.collection('member').findOne( { id : 입력한아이디 }, function (err, result) {
+    db.collection('member').findOne( { id : 입력한아이디 }, function(err, result) {
         if (err) return done(err);
         if (!result) return done(null, false, { message : '존재하지 않는 회원입니다.' } ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
         if (입력한비밀번호 == result.pw) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
@@ -143,7 +152,7 @@ passport.use(new LocalStrategy({
 // 유저 정보를 세션에 저장시키는 로직 => 로그인 성공시 동작
 // 콜백 함수 안에 파라미터 user 는 위의 결과값 result 가 담겨있음 => id, pw 검증 성공 결과
 // 위에서 인증 성공하면 세션 + 쿠키 만들어줌
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function(user, done) {
     done(null, user.id);
 });
 
@@ -151,8 +160,8 @@ passport.serializeUser(function (user, done) {
 // deserializeUser => 세션을 찾을 때 실행
 // db 에서 위에 있는 user.id 로 유저를 찾은 다음 그 정보를 {} 에 넣음
 // user.id == 아이디 동일한 데이터
-passport.deserializeUser(function (아이디, done) {
-    db.collection('member').findOne({ id : 아이디}, function (err, result) {
+passport.deserializeUser(function(아이디, done) {
+    db.collection('member').findOne({ id : 아이디}, function(err, result) {
         done(null, result);
     });
 });
@@ -200,9 +209,12 @@ app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /inser
 // ajax delete 삭제 요청이 왔을 때
 app.delete('/delete', (req, res) => {
     console.log(req.body);
-    req.body._id = parseInt(req.body._id); // ajax 로 보낼 때 int 로 보냈지만 값이 넘어올 때 스트링으로 왔으므로 int 로 다시 변환
 
-    var 삭제할데이터 = { _id : req.body._id, 작성자 : req.user._id } // 실제 로그인 중인 유저 _id 와, 글에 저장된 _id 가 일치하는 것만 삭제
+    // ajax 로 보낼 때 int 로 보냈지만 값이 넘어올 때 스트링으로 왔으므로 int 로 다시 변환
+    req.body._id = parseInt(req.body._id); 
+
+    // 실제 로그인 중인 유저 _id 와, 글에 저장된 _id 가 일치하는 것만 삭제
+    var 삭제할데이터 = { _id : req.body._id, 작성자 : req.user._id } 
 
     // req.body에 담겨온 게시물 번호를 가진 글을 db 에서 찾아서 삭제
     db.collection('post').deleteOne(삭제할데이터, function(err, result) {
@@ -215,15 +227,18 @@ app.delete('/delete', (req, res) => {
 // mypage 페이지 요청을 하면 loginChk 실행 후 응답
 // loginChk 미들웨어 사용법, 위에 로그인 할 때 같은 방법 사용 했었음
 // deserializeUser 에서 찾은 정보를 mypage.ejs 에 보내줌
-app.get('/mypage', loginChk, function (req, res) {
+app.get('/mypage', loginChk, function(req, res) {
     console.log(req.user);
-    res.render('mypage.ejs', { 사용자 : req.user }); // req.user => 아래 로직에 있는 user
+
+    // req.user => 아래 로직에 있는 user
+    res.render('mypage.ejs', { 사용자 : req.user }); 
 });
 
 // 미들웨어 함수 만들기
 // 로그인 후 세션이 있으면 요청.user 는 항상 있음
 function loginChk (req, res, next) {
-    if (req.user) { // 요청.user 가 있는지 ?
+    // 요청.user 가 있는지 여부 체크
+    if (req.user) { 
         next(); // 통과
     } else {
         res.send('로그인 후 이용해주세요.');
@@ -259,7 +274,8 @@ app.get('/search', (req, res) => {
         },
         { $sort : { _id : 1} }, // _id(번호) 정렬
         { $limit : 5 }, // 게시글 갯수 제한
-        { $project : { 제목 : 1, _id : 1, score : { $meta : "searchScore" } } } // 0, 1 로 가져오고 안가져오고 판별. 안써도 안가져 오기는 함 빔프로젝트 연상
+        // 0, 1 로 가져오고 안가져오고 판별. 어차피 애초에 명시 안하면 안가져옴
+        { $project : { 제목 : 1, _id : 1, score : { $meta : "searchScore" } } }
     ]
         db.collection('post').aggregate(검색조건).toArray((err, result) => {
         console.log(result);
@@ -267,10 +283,15 @@ app.get('/search', (req, res) => {
     });
 });
 
-// 회원가입 /join 로직 만들어놔서 이 부분은 사용 보류
-// 회원가입을 하면 로그인 컬렉션에 insert
-// app.post('/register', function(req, res) {
-//     db.collection('login').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
-//         res.redirect('/');
-//     });
+// 고객이 '/shop' 경로로 요청했을 때 require('./routes/shop') 미들웨어를 적용해주세요 라는 의미
+// 라우트를 나누어서 관리하면 유지보수에 용이함
+app.use('/shop', require('./routes/shop.js'));
+app.use('/board/sub', require('./routes/board.js'));
+
+// app.get('/shop/shirts', function(req, res) {
+//     res.send('셔츠 판매 페이지입니다.');
+// });
+
+// app.get('/shop/pants', function(req, res) {
+//     res.send('바지 판매 페이지입니다.');
 // });
