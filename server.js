@@ -36,58 +36,12 @@ app.get('/', (req, res) => {
     res.render('index.ejs');
 });
 
-app.get('/write', (req, res) => {
-    res.render('write.ejs');
-});
-
-// collection 은 필요할 때 가져다 쓰면 됨
-// post 요청으로 서버에 데이터 전송하고 싶으면 bodyParser 라이브러리 install
-app.post('/insert', (req, res) => { // form 태그에서 post 방식으로 /insert 요청이 있을 시
-    res.send('전송 완료'); // 전송완료라는 응답을 해줌
-    console.log(req.body.title); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
-    console.log(req.body.date); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
-
-    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result) { // db 에서 counter 라는 파일에 저장된 name 이 게시물갯수라는 것을 찾아주세요
-        console.log(result.totalPost); // 위의 결과 result 에서 totalPost 저장된 오브젝트 데이터 중 totalPost(게시물갯수)를 찾아주세요
-        let totalCount = result.totalPost; // 찾은 결과를 totalCount 라는 변수에 담았음
-
-        // todoapp 이라는 db 안에 post 파일에 insertOne { 자료 } 저장
-        // 자료 저장시 _id 꼭 적어야 함, 미작성시 강제로 부여됨
-        // 위에서 결과를 담은 변수를 _id 에 + 1 시켜서 부여함 
-        db.collection('post').insertOne({ _id : totalCount + 1, 제목 : req.body.title, 날짜 : req.body.date }, function(err, result) {
-            console.log('저장 완료');
-            // counter 라는 db 폴더에 따로 관리하는 totalPost : 0 데이터에도 + 1 증가시켜주는 로직
-            // updateOne({어떤 데이터를 수정할지}, {수정할 값}, function(에러, 결과){})
-            // 연산자 (operator) 종류
-            // $set => 값을 바꿔주세요 요청을 하고싶을 때 사용 방법 => { $set : { totalPost : 바꿀 값 }}
-            // $inc => 기존 값에서 증가해주세요 increment 의 약자, 사용 방법 => { $set : { totalPost : 기존값에 증가해줄 값 }}
-            // 그리고 뒤에 콜백함수는 이전꺼 동작 후 실행해주는 함수. 항상 첫번째 파라미터는 에러, 두번째 파라미터는 결과
-            db.collection('counter').updateOne({ name : '게시물갯수'}, { $inc : { totalPost : 1 }}, function(err, result){
-                if(err) {
-                    return console.log(err); 
-                }
-            }); // updateOne
-        }); // insertOne
-    }); // findOne
-});
-
 app.get('/list', (req, res) => {
     // database 에 저장된 post 라는 collection 안에 모든 데이터를 꺼내는 방법
     db.collection('post').find().toArray( (err, result) => {
         // console.log(result);
         res.render('list.ejs', { posts : result });
     }); 
-});
-
-// ajax delete 삭제 요청이 왔을 때
-app.delete('/delete', (req, res) => {
-    console.log(req.body);
-    req.body._id = parseInt(req.body._id); // ajax 로 보낼 때 int 로 보냈지만 값이 넘어올 때 스트링으로 왔으므로 int 로 다시 변환
-    // req.body에 담겨온 게시물 번호를 가진 글을 db 에서 찾아서 삭제
-    db.collection('post').deleteOne(req.body, function(err, result) {
-        console.log('삭제완료');
-        res.status(200).send({ message : 'DB 삭제처리 성공 !!!' });
-    }); // deleteOne
 });
 
 app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
@@ -137,7 +91,7 @@ app.post('/join', (req, res) => {
     console.log(req.body.id); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
     console.log(req.body.pw); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
 
-    db.collection('member').findOne({ id : req.body.id }, function (err, result) {
+    db.collection('member').findOne( { id : req.body.id }, function (err, result) {
         // form 에 담겨져 온 req.body.id 값이 db 에 있는지 없는지 결과 result 에 담김
         // 그 result 값이 null 이 아니거나, form 데이터 (req.body.id) 와 결과 값 중 id 와 같으면, 즉 폼 데이터가 디비에 있는 데이터와 같으면 아이디 중복
         // 정리하면.. req.body.id 폼 데이터를 조회했을 때 결과값이 있고, db 에도 값이 있으면 아이디 중복
@@ -147,6 +101,7 @@ app.post('/join', (req, res) => {
         } else {
             db.collection('member').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result) {
                 console.log('회원가입 성공');
+                // res.redirect('/');
             }); // insertOne
         }
     }); // findOne
@@ -154,7 +109,7 @@ app.post('/join', (req, res) => {
 
 app.get('/login', function (req, res) {
     res.render('login.ejs');
-})
+});
 
 // passport 라이브러리 미들웨어 사용하여 local 방식으로 검사, 검사하는 코드는 바로 아래 로직
 // 로그인을 시도하면 아이디, 비밀번호 검사
@@ -202,6 +157,61 @@ passport.deserializeUser(function (아이디, done) {
     });
 });
 
+app.get('/write', (req, res) => {
+    res.render('write.ejs');
+});
+
+// collection 은 필요할 때 가져다 쓰면 됨
+// post 요청으로 서버에 데이터 전송하고 싶으면 bodyParser 라이브러리 install
+app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /insert 요청이 있을 시
+    res.send('전송 완료'); // 전송완료라는 응답을 해줌
+    console.log(req.body.title); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
+    console.log(req.body.date); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
+
+    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result) { // db 에서 counter 라는 파일에 저장된 name 이 게시물갯수라는 것을 찾아주세요
+        console.log(result.totalPost); // 위의 결과 result 에서 totalPost 저장된 오브젝트 데이터 중 totalPost(게시물갯수)를 찾아주세요
+        
+        // 찾은 결과를 totalCount 라는 변수에 담았음
+        var totalCount = result.totalPost; 
+        
+        // 작성자 => 현재 로그인 한 사람의 _id 정보
+        var 저장할항목 = { _id : totalCount + 1, 작성자 : req.user._id, 제목 : req.body.title, 날짜 : req.body.date } 
+
+        // todoapp 이라는 db 안에 post 파일에 insertOne { 자료 } 저장
+        // 자료 저장시 _id 꼭 적어야 함, 미작성시 강제로 부여됨
+        // 위에서 결과를 담은 변수를 _id 에 + 1 시켜서 부여함 
+        db.collection('post').insertOne( 저장할항목, function(err, result) {
+            console.log('저장 완료');
+            // counter 라는 db 폴더에 따로 관리하는 totalPost : 0 데이터에도 + 1 증가시켜주는 로직
+            // updateOne({어떤 데이터를 수정할지}, {수정할 값}, function(에러, 결과){})
+            // 연산자 (operator) 종류
+            // $set => 값을 바꿔주세요 요청을 하고싶을 때 사용 방법 => { $set : { totalPost : 바꿀 값 }}
+            // $inc => 기존 값에서 증가해주세요 increment 의 약자, 사용 방법 => { $set : { totalPost : 기존값에 증가해줄 값 }}
+            // 그리고 뒤에 콜백함수는 이전꺼 동작 후 실행해주는 함수. 항상 첫번째 파라미터는 에러, 두번째 파라미터는 결과
+            db.collection('counter').updateOne({ name : '게시물갯수'}, { $inc : { totalPost : 1 }}, function(err, result){
+                if(err) {
+                    return console.log(err); 
+                }
+            }); // updateOne
+        }); // insertOne
+    }); // findOne
+});
+
+// ajax delete 삭제 요청이 왔을 때
+app.delete('/delete', (req, res) => {
+    console.log(req.body);
+    req.body._id = parseInt(req.body._id); // ajax 로 보낼 때 int 로 보냈지만 값이 넘어올 때 스트링으로 왔으므로 int 로 다시 변환
+
+    var 삭제할데이터 = { _id : req.body._id, 작성자 : req.user._id } // 실제 로그인 중인 유저 _id 와, 글에 저장된 _id 가 일치하는 것만 삭제
+
+    // req.body에 담겨온 게시물 번호를 가진 글을 db 에서 찾아서 삭제
+    db.collection('post').deleteOne(삭제할데이터, function(err, result) {
+        console.log('삭제완료');
+        if(result) { console.log(result) }
+        res.status(200).send({ message : 'DB 삭제처리 성공 !!!' });
+    }); // deleteOne
+});
+
 // mypage 페이지 요청을 하면 loginChk 실행 후 응답
 // loginChk 미들웨어 사용법, 위에 로그인 할 때 같은 방법 사용 했었음
 // deserializeUser 에서 찾은 정보를 mypage.ejs 에 보내줌
@@ -227,7 +237,6 @@ app.get('/search', (req, res) => {
     // req.query => { value: '게시물' }
     // req.query.value 에서 .value 는 object 자료형에서 데이터를 꺼내는 방식 => 게시물
     console.log(req.query.value);
-
     // Binary Search 를 적용하려면 미리 숫자 정렬이 되어있어야 함
     // mongodb 는 _id 순으로 미리 정렬이 되어있음
     // index : 기존 collection 을 정렬 해 놓은 사본
@@ -236,8 +245,32 @@ app.get('/search', (req, res) => {
     // $text, $search 연산자 (operator)
     // db 에서 index 추가할 때 텍스트 text index 를 만들어 놓으면 자동적으로 쓸 수 있는 기능 => mongoDB 기능
     // 하지만 text index 의 문제점은 띄어쓰기 기준으로 구별하기 때문에 한글 친화적이지 않음 => 글쓰기입니다 => 글쓰기로 검색하면 안나옴
-    db.collection('post').find({ $text: { $search : req.query.value } }).toArray((err, result) => {
+    // db.collection('post').find({ $text: { $search : req.query.value } }).toArray((err, result) => {
+    // aggregate({1~10일까지 찾기}, { '글쓰기라는' 단어가 포함된것을 }, { 결과를 정렬 }) != text index 와의 차이점
+    var 검색조건 = [
+        {
+            $search : {
+                index : 'titleSearch', // 만든 인덱스 명
+                text : {
+                    query : req.query.value,
+                    path : ['제목', '날짜'] // 컬렉션 안에 있는 데이터 중에 어떤 항목에서 검사를 할 것인지
+                }
+            }
+        },
+        { $sort : { _id : 1} }, // _id(번호) 정렬
+        { $limit : 5 }, // 게시글 갯수 제한
+        { $project : { 제목 : 1, _id : 1, score : { $meta : "searchScore" } } } // 0, 1 로 가져오고 안가져오고 판별. 안써도 안가져 오기는 함 빔프로젝트 연상
+    ]
+        db.collection('post').aggregate(검색조건).toArray((err, result) => {
         console.log(result);
         res.render('search.ejs', { search : result });
     });
 });
+
+// 회원가입 /join 로직 만들어놔서 이 부분은 사용 보류
+// 회원가입을 하면 로그인 컬렉션에 insert
+// app.post('/register', function(req, res) {
+//     db.collection('login').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
+//         res.redirect('/');
+//     });
+// });
