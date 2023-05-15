@@ -20,7 +20,6 @@ app.use(session({ secret : '비밀코드', resave : true, saveUninitialized : fa
 app.use(passport.initialize());
 app.use(passport.session());
 
-
 var db; // 전역변수
 // MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
     MongoClient.connect(process.env.DB_URL, function(err, client){ // 이와 같이 .env 파일 만들어서 관리
@@ -111,11 +110,11 @@ app.post('/join', (req, res) => {
 
 // 회원가입 /join 로직 만들어놔서 이 부분은 사용 보류
 // 회원가입을 하면 로그인 컬렉션에 insert
-// app.post('/register', function(req, res) {
-//     db.collection('login').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
-//         res.redirect('/');
-//     });
-// });
+app.post('/register', function(req, res) {
+    db.collection('login').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
+        res.redirect('/');
+    });
+});
 
 app.get('/login', function(req, res) {
     res.render('login.ejs');
@@ -287,6 +286,7 @@ app.get('/search', (req, res) => {
 // 이미지, 영상 업로드 요청
 // npm install multer => 파일 전송을 쉽게 저장할 수 있게 도와주는 라이브러리
 let multer = require('multer');
+const { ObjectId } = require('mongodb');
 
 // diskStorage 이미지를 어디에 저장할지 정의하는 함수 이미지 서버 하드에 저장
 // memoryStorage 이미지를 메모리 램에 저장. 휘발성 있게 저장
@@ -327,6 +327,44 @@ app.post('/upload', upload.single('profile'), function(req, res) {
 // /image/music.jpg 라고 하면 music.jpg 를 보여줘야함
 app.get('/image/:imageName', function(req, res) {
     res.sendFile( __dirname + '/public/image/' + req.params.imageName);
+});
+
+// list.ejs 에서 /chatroom post 요청이 있을 시
+app.post('/chatroom', loginChk, function(req, res) {
+    var 저장할거 = {
+        title : '무슨무슨채팅방',
+        member : [ObjectId(req.body.당한사람id), req.user._id], // 채팅당한사람, 채팅을 시도한사람, ObjectId 형식으로 저장
+        date : new Date()
+    }
+    db.collection('chatroom').insertOne(저장할거).then( (result) => { // insert 가 실행 됐을 때 콜백함수 대신 .then 사용 가능 
+        console.log(result);
+        res.send('성공');
+    });
+});
+
+app.get('/chat', loginChk, function(req, res) {
+    // req.user._id 현재 로그인 한 user id
+    // member 컬렉션은 array 구조인데 array 안에 '하나만' 찾고싶을 때 member : req.user._id 이런 식으로 찾아도 됨
+    db.collection('chatroom').find( { member : req.user._id } ).toArray().then( (result) => {
+        res.render('chat.ejs', { data : result } );
+    });
+});
+
+app.post('/message', loginChk, function(req, res) {
+
+    var 저장할거 = {
+        parent : req.body.parent, // chatjs 에서 ajax 로 값 넘어옴
+        content : req.body.content, // chatjs 에서 ajax 로 값 넘어옴
+        userid : req.user._id, // 현재 로그인한 userid
+        date : new Date()
+    }
+
+    db.collection('message').insertOne(저장할거).then( (result) => {
+        console.log('채팅 DB 저장 완료');
+        res.send('채팅 DB 저장 완료');
+    }).catch( () => {
+        console.log('채팅 DB 저장 실패');
+    });
 });
 
 // 고객이 '/shop' 경로로 요청했을 때 require('./routes/shop') 미들웨어를 적용해주세요 라는 의미

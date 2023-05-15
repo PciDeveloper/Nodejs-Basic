@@ -30,6 +30,7 @@
               <p>할일 마감 날짜 : <%= posts[i].날짜 %> </p>
               <button class="delete btn btn-danger" data-id="<%= posts[i]._id %>">삭제</button>
               <button class="update btn btn-danger" data-id="<%= posts[i]._id %>">수정</button>
+              <button class="chat btn btn-secondary" data-id="<%= posts[i].작성자 %>">채팅</button>
             </li>
           <% } %>
         </ul>
@@ -71,6 +72,14 @@
         $('#search').on('click', function () {
           var keyword = $('#keyword').val(); // 검색어에 입력한 input 값
           window.location.replace('/search?value=' + keyword); // url 을 이것으로 바꿔주세요 (get 요청)
+        });
+
+        $('.chat').on('click', function(e) {
+          var id = e.target.dataset.id;
+          // post 요청으로 경로, 보낼데이터, 성공했을 때 실행 then
+          $.post('/chatroom', { 당한사람id : id } ).then( () => {
+            console.log('당한사람 id 전달 성공');
+          });
         });
       </script>
 
