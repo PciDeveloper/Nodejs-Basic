@@ -37,11 +37,11 @@ app.get('/', (req, res) => {
     res.render('index.ejs');
 });
 
-app.get('/list', (req, res) => {
+app.get('/list', loginChk, (req, res) => {
     // database 에 저장된 post 라는 collection 안에 모든 데이터를 꺼내는 방법
     db.collection('post').find().toArray( (err, result) => {
         // console.log(result);
-        res.render('list.ejs', { posts : result });
+        res.render('list.ejs', { posts : result } );
     }); 
 });
 
@@ -50,7 +50,7 @@ app.get('/detail/:id', (req, res) => { // /detail/:id 으로 라우팅
     // 그러나 db post 라는 폴더에 있는 데이터 중 _id 는 int 이므로 int 로 변환을 시켜줘야함
     db.collection('post').findOne( { _id : parseInt(req.params.id) }, function(err, result) { 
         if(result){
-            res.render('detail.ejs', { data : result }); // ejs 파일에 값 넘길 때 object 형식으로 값이 전달됨
+            res.render('detail.ejs', { data : result } ); // ejs 파일에 값 넘길 때 object 형식으로 값이 전달됨
         } else {
             console.log('찾으시는 데이터가 없습니다.');
             res.render('404.ejs');
@@ -63,7 +63,7 @@ app.get('/update/:id', function(req, res) {
     db.collection('post').findOne( { _id : parseInt(req.params.id) }, function(err, result) {
         if(result) {
             console.log(result);
-            res.render('update.ejs', { post : result });
+            res.render('update.ejs', { post : result } );
         } else {
             console.log('찾으시는 데이터가 없습니다.');
             res.render('404.ejs');
@@ -96,11 +96,12 @@ app.post('/join', (req, res) => {
         // form 에 담겨져 온 req.body.id 값이 db 에 있는지 없는지 결과 result 에 담김
         // 그 result 값이 null 이 아니거나, form 데이터 (req.body.id) 와 결과 값 중 id 와 같으면, 즉 폼 데이터가 디비에 있는 데이터와 같으면 아이디 중복
         // 정리하면.. req.body.id 폼 데이터를 조회했을 때 결과값이 있고, db 에도 값이 있으면 아이디 중복
+        // null 처리 안해서 오류났었음
         if (result !== null && req.body.id === result.id) { 
             console.log('아이디 중복');
             return false;
         } else {
-            db.collection('member').insertOne({ id : req.body.id, pw : req.body.pw }, function(err, result) {
+            db.collection('member').insertOne( { id : req.body.id, pw : req.body.pw }, function(err, result) {
                 console.log('회원가입 성공');
                 // res.redirect('/');
             }); // insertOne
@@ -123,7 +124,7 @@ app.get('/login', function(req, res) {
 // passport 라이브러리 미들웨어 사용하여 local 방식으로 검사, 검사하는 코드는 바로 아래 로직
 // 로그인을 시도하면 아이디, 비밀번호 검사
 // failureRedirect 회원 인증 실패시 fale 경로 이동
-app.post('/login', passport.authenticate('local', { failureRedirect : '/fale'}), (req, res) => {
+app.post('/login', passport.authenticate('local', { failureRedirect : '/fale' } ), (req, res) => {
     res.redirect('/');
 });
 
@@ -161,7 +162,7 @@ passport.serializeUser(function(user, done) {
 // db 에서 위에 있는 user.id 로 유저를 찾은 다음 그 정보를 {} 에 넣음
 // user.id == 아이디 동일한 데이터
 passport.deserializeUser(function(아이디, done) {
-    db.collection('member').findOne({ id : 아이디}, function(err, result) {
+    db.collection('member').findOne( { id : 아이디 }, function(err, result) {
         done(null, result);
     });
 });
@@ -177,7 +178,7 @@ app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /inser
     console.log(req.body.title); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
     console.log(req.body.date); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
 
-    db.collection('counter').findOne({ name : '게시물갯수' }, function(err, result) { // db 에서 counter 라는 파일에 저장된 name 이 게시물갯수라는 것을 찾아주세요
+    db.collection('counter').findOne( { name : '게시물갯수' }, function(err, result) { // db 에서 counter 라는 파일에 저장된 name 이 게시물갯수라는 것을 찾아주세요
         console.log(result.totalPost); // 위의 결과 result 에서 totalPost 저장된 오브젝트 데이터 중 totalPost(게시물갯수)를 찾아주세요
         
         // 찾은 결과를 totalCount 라는 변수에 담았음
@@ -197,7 +198,7 @@ app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /inser
             // $set => 값을 바꿔주세요 요청을 하고싶을 때 사용 방법 => { $set : { totalPost : 바꿀 값 }}
             // $inc => 기존 값에서 증가해주세요 increment 의 약자, 사용 방법 => { $set : { totalPost : 기존값에 증가해줄 값 }}
             // 그리고 뒤에 콜백함수는 이전꺼 동작 후 실행해주는 함수. 항상 첫번째 파라미터는 에러, 두번째 파라미터는 결과
-            db.collection('counter').updateOne({ name : '게시물갯수'}, { $inc : { totalPost : 1 }}, function(err, result){
+            db.collection('counter').updateOne( { name : '게시물갯수' }, { $inc : { totalPost : 1 } }, function(err, result){
                 if(err) {
                     return console.log(err); 
                 }
@@ -220,7 +221,7 @@ app.delete('/delete', (req, res) => {
     db.collection('post').deleteOne(삭제할데이터, function(err, result) {
         console.log('삭제완료');
         if(result) { console.log(result) }
-        res.status(200).send({ message : 'DB 삭제처리 성공 !!!' });
+        res.status(200).send( { message : 'DB 삭제처리 성공 !!!' } );
     }); // deleteOne
 });
 
@@ -231,7 +232,7 @@ app.get('/mypage', loginChk, function(req, res) {
     console.log(req.user);
 
     // req.user => 아래 로직에 있는 user
-    res.render('mypage.ejs', { 사용자 : req.user }); 
+    res.render('mypage.ejs', { 사용자 : req.user } ); 
 });
 
 // 미들웨어 함수 만들기
@@ -283,15 +284,52 @@ app.get('/search', (req, res) => {
     });
 });
 
+// 이미지, 영상 업로드 요청
+// npm install multer => 파일 전송을 쉽게 저장할 수 있게 도와주는 라이브러리
+let multer = require('multer');
+
+// diskStorage 이미지를 어디에 저장할지 정의하는 함수 이미지 서버 하드에 저장
+// memoryStorage 이미지를 메모리 램에 저장. 휘발성 있게 저장
+var storage = multer.diskStorage({
+   destination : function(req, file, callback) {
+    callback(null, './public/image'); // public/image 폴더 안에 저장
+   },
+   filename : function(req, file, callback) {
+    callback(null, file.originalname); // 파일명 설정하는 부분인데 originalname 기본파일명으로 저장
+   }
+//    },
+//    filefilter : function(req, file, callback) { // 파일 형식 (확장자) 거르기
+//     var ext = path.extname(file.originalname);
+//     if(ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') {
+//         return callback(new Error('PNG, JPG만 업로드하세요'))
+//     }
+//     callback(null, true)
+//    },
+//    limits : { // file 사이즈 제한
+//     fileSize: 1024 * 1024
+//    }
+});
+
+// 이제 post 요청시 위에서 세팅해서 담은 변수 upload multer 를 호출 해주면 됨
+var upload = multer( { storage : storage } );
+
+app.get('/upload', function(req, res) {
+    res.render('upload.ejs');
+});
+
+// upload.single('input에 있는 name 속성') 미들웨어처럼 호출해서 사용
+// single 은 이미지 하나만 업로드 가능
+// upload.array('input name 속성', 최대 받을 갯수) 여러개 업로드 가능
+app.post('/upload', upload.single('profile'), function(req, res) {
+    res.send('업로드 완료');
+});
+
+// /image/music.jpg 라고 하면 music.jpg 를 보여줘야함
+app.get('/image/:imageName', function(req, res) {
+    res.sendFile( __dirname + '/public/image/' + req.params.imageName);
+});
+
 // 고객이 '/shop' 경로로 요청했을 때 require('./routes/shop') 미들웨어를 적용해주세요 라는 의미
 // 라우트를 나누어서 관리하면 유지보수에 용이함
 app.use('/shop', require('./routes/shop.js'));
 app.use('/board/sub', require('./routes/board.js'));
-
-// app.get('/shop/shirts', function(req, res) {
-//     res.send('셔츠 판매 페이지입니다.');
-// });
-
-// app.get('/shop/pants', function(req, res) {
-//     res.send('바지 판매 페이지입니다.');
-// });
