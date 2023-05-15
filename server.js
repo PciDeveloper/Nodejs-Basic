@@ -336,7 +336,7 @@ app.post('/chatroom', loginChk, function(req, res) {
         member : [ObjectId(req.body.당한사람id), req.user._id], // 채팅당한사람, 채팅을 시도한사람, ObjectId 형식으로 저장
         date : new Date()
     }
-    db.collection('chatroom').insertOne(저장할거).then( (result) => { // insert 가 실행 됐을 때 콜백함수 대신 .then 사용 가능 
+    db.collection('chatroom').insertOne(저장할거).then( (result) => { // insert 성공했을 때 콜백함수 대신 .then 사용 가능 결과는 result 에 담김
         console.log(result);
         res.send('성공');
     });
@@ -345,6 +345,7 @@ app.post('/chatroom', loginChk, function(req, res) {
 app.get('/chat', loginChk, function(req, res) {
     // req.user._id 현재 로그인 한 user id
     // member 컬렉션은 array 구조인데 array 안에 '하나만' 찾고싶을 때 member : req.user._id 이런 식으로 찾아도 됨
+    // 결과값은 콜백함수 기능을 하는 .then result 에 담겨있음. result 값이 data 라는 이름으로 chat.ejs 에 렌더링
     db.collection('chatroom').find( { member : req.user._id } ).toArray().then( (result) => {
         res.render('chat.ejs', { data : result } );
     });
