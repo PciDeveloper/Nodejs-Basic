@@ -191,6 +191,7 @@ app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /inser
         // 위에서 결과를 담은 변수를 _id 에 + 1 시켜서 부여함 
         db.collection('post').insertOne( 저장할항목, function(err, result) {
             console.log('저장 완료');
+            console.log('result');
             // counter 라는 db 폴더에 따로 관리하는 totalPost : 0 데이터에도 + 1 증가시켜주는 로직
             // updateOne({어떤 데이터를 수정할지}, {수정할 값}, function(에러, 결과){})
             // 연산자 (operator) 종류
@@ -237,8 +238,7 @@ app.get('/mypage', loginChk, function(req, res) {
 // 미들웨어 함수 만들기
 // 로그인 후 세션이 있으면 요청.user 는 항상 있음
 function loginChk (req, res, next) {
-    // 요청.user 가 있는지 여부 체크
-    if (req.user) { 
+    if (req.user) { // 요청.user 가 있는지 여부 체크
         next(); // 통과
     } else {
         res.send('로그인 후 이용해주세요.');
@@ -286,7 +286,6 @@ app.get('/search', (req, res) => {
 // 이미지, 영상 업로드 요청
 // npm install multer => 파일 전송을 쉽게 저장할 수 있게 도와주는 라이브러리
 let multer = require('multer');
-const { ObjectId } = require('mongodb');
 
 // diskStorage 이미지를 어디에 저장할지 정의하는 함수 이미지 서버 하드에 저장
 // memoryStorage 이미지를 메모리 램에 저장. 휘발성 있게 저장
@@ -330,6 +329,7 @@ app.get('/image/:imageName', function(req, res) {
 });
 
 // list.ejs 에서 /chatroom post 요청이 있을 시
+const { ObjectId } = require('mongodb');
 app.post('/chatroom', loginChk, function(req, res) {
     var 저장할거 = {
         title : '무슨무슨채팅방',
@@ -357,15 +357,59 @@ app.post('/message', loginChk, function(req, res) {
         parent : req.body.parent, // chatjs 에서 ajax 로 값 넘어옴
         content : req.body.content, // chatjs 에서 ajax 로 값 넘어옴
         userid : req.user._id, // 현재 로그인한 userid
-        date : new Date()
+        date : new Date(),
     }
 
     db.collection('message').insertOne(저장할거).then( (result) => {
         console.log('채팅 DB 저장 완료');
         res.send('채팅 DB 저장 완료');
-    }).catch( () => {
-        console.log('채팅 DB 저장 실패');
     });
+});
+
+// get 요청 시 URL 파라미터 query string 을 사용하여 서버로 데이터 전송 
+// 현재는 채팅방 접속시 메세지들 한번 찾아서 보내고 끝임. 새로운 메세지를 보내면 바로 출력이 안됨
+app.get('/message/:id', loginChk, function(req, res) {
+    
+    // Header 를 이런식으로 수정해주세요
+    // http 요청시 숨겨져서 전달되는 정보들도 있음(언어, 브라우저 정보, 쿠키, 어디서왔는지 등) 이러한 정보들은 Header 라는 공간 안에 담겨있음
+    // /message로 get 요청시 실시간 채널이 오픈됨
+    // 일반 get, post 요청은 1회 1응답만 가능하지만 이런식으로 하면 여러번 응답이 가능함
+    res.writeHead(200, {
+        "Connection": "keep-alive",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+    });
+    // res.setHeader('Connection', 'keep-alive');
+    // res.setHeader('Content-Type', 'text/event-stream');
+    // res.setHeader('Cache-Control', 'no-cache');
+
+    // 지금 누른 채팅방에 속한 채팅 메세지들 모두 가져오기
+    // parent : req.params.id 채팅방을 누르면 채팅방 _id 가 여기에 들어옴 /message/:id 이부분 id
+    db.collection('message').find( { parent : req.params.id } ).toArray().then((result) => {
+        console.log(result);
+        // 서버에서 유저한테 실시간으로 메세지를 '보내는' 방법
+        // 어떤 이름으로 데이터를 전송하겠다 라는 뜻 => event : 보낼 데이터 이름 \n
+        res.write('event : test\n');
+
+        // data : 보낼 데이터 \n\n
+        // 서버에서 실시간 전송시 문자열만 전송 가능함
+        // result 값이 array {} {} {} 이런 형태이므로 JSON.stringify 문자열로 변환 후 보냄
+        res.write('data : ' + JSON.stringify(result) + '\n\n');
+    });
+
+    // changeStream 사용법
+    const pipeline = [
+        { $match : { 'fullDocument.parent' : req.params.id } } // 컬렉션 안에 원하는 document 만 감시하면 싶으면. 즉 내가 채팅한 부모 게시물만 감시
+    ];
+    const collection = db.collection('message'); // 컬렉션을 정해주고
+    const changeStream = collection.watch(pipeline); // watch 함수를 붙여주면 mongodb 가 실시간으로 감시해줌
+    changeStream.on('change', (result) => { // db 에 변동 사항이 생기면 ~
+
+        // 응답해주세요 ~ 데이터를 보낼 때 데이터가 [{}, {}, {}] 오브젝트 자료였으므로 형식을 갖춰서 보냄
+        res.write('event : test\n');
+        res.write('data : ' + JSON.stringify([result.fullDocument]) + '\n\n');
+    });
+
 });
 
 // 고객이 '/shop' 경로로 요청했을 때 require('./routes/shop') 미들웨어를 적용해주세요 라는 의미

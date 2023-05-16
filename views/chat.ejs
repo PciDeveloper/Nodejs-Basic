@@ -50,15 +50,39 @@
       <script>
 
         var 지금누른채팅방id;
-        $('.list-group-item').on('click', function() {
+        var eventSource;
+        $('.list-group-item').click(function() { // 채팅방 중 하나를 누르면 ~
             지금누른채팅방id = this.dataset.id; // this => 지금 클릭 이벤트 동작하는 곳
+            $('.chat-content').html(''); // 다른 채팅방 누를때마다 내용을 비워주세요
+
+            if(eventSource != undefined) { // eventSource 가 undefined 가 아니면
+              eventSource.close(); // 채팅방 나가기
+            }
+
+            // 유저가 데이터 수신하는 방법은 new EventSource('/경로')
+            eventSource = new EventSource('/message/' + 지금누른채팅방id); // 여기 채널로 입장
+
+            // 유저가 메세지를 수신 하고 싶을 때 addEventListener 사용
+            // 파라미터 function 에 서버가 보내온 데이터가 담겨져 있음
+            // 서버가 응답을 해주고 데이터를 보내줄 때마다 e.data 에 값이 담김
+            eventSource.addEventListener('test', function(e) {
+
+              // 서버가 데이터 보내주면 출력하는 로직. 서버에서 온 데이터 '안녕하세요' 가 담김
+              // 문자열로 넘어온 데이터 "" 따옴표를 다시 제거 JSON.parse
+              // object, array 자료들 깨지지 않게 전달
+              var 가져온거 = JSON.parse(e.data);
+              가져온거.forEach(function(i) { // 가져온거 데이터 변수 i 갯수 만큼 반복문
+                $('.chat-content').append('<li><span class="chat-box">' + i.content + '</span></li>'); // i 변수안에 content 내용 출력
+              });
+
+            });
         });
 
         $('#send').on('click', function() {
             var 채팅내용 = $('#chat-input').val();
             var 보낼데이터 = {
                 parent : 지금누른채팅방id, // 부모 채팅방
-                content : 채팅내용
+                content : 채팅내용,
             }
             $.post('/message', 보낼데이터).then( () => {
                 console.log('채팅내용 전송성공');
