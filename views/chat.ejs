@@ -69,7 +69,7 @@
             // 파라미터 function 에 서버가 보내온 데이터가 담겨져 있음
             // 서버가 응답을 해주고 데이터를 보내줄 때마다 e.data 에 값이 담김
             eventSource.addEventListener('test', function(e) {
-
+              console.log(JSON.parse(e.data));
               // 서버가 데이터 보내주면 출력하는 로직. 서버에서 온 데이터 '안녕하세요' 가 담김
               // 문자열로 넘어온 데이터 "" 따옴표를 다시 제거 JSON.parse
               // object, array 자료들 깨지지 않게 전달
