@@ -20,6 +20,11 @@ app.use(session({ secret : '비밀코드', resave : true, saveUninitialized : fa
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Socket.io 실시간 데이터 보내고 받는 라이브러리 설치하는 문법
+const http = require('http').createServer(app);
+const {Server} = require('socket.io');
+const io = new Server(http);
+
 var db; // 전역변수
 // MongoClient.connect('mongodb+srv://admin:qwer1234@pci.bvm9dz3.mongodb.net/?retryWrites=true&w=majority', function(err, client){
     MongoClient.connect(process.env.DB_URL, function(err, client){ // 이와 같이 .env 파일 만들어서 관리
@@ -27,9 +32,53 @@ var db; // 전역변수
     if(err) return console.log(err);
     db = client.db('todoapp'); // todoapp 이라는 database에 연결
 
-    app.listen(8080, () => {
+    // 쌩 nodejs 로 서버를 띄울때 http.listen 을 쓰지만 express 라는 라이브러리를 사용하고 있으므로 app.listen 을 사용했었음
+    // 동일한 기능을 하기 떄문에 둘의 별 차이는 없음
+    // app.listen(8080, () => {
+    http.listen(8080, () => { 
         console.log('listening on 8080');
     });
+});
+
+app.get('/socket', function(req, res) {
+    res.render('socket.ejs');
+});
+
+// 어떤 사람이 socket.ejs web socket 에 접속하면 동작
+io.on('connection', function(socket) { // 유저가 보낸 메세지 수신하기 위해 socket 파라미터 추가
+    console.log('유저 접속함');
+    console.log('socket 에 접속한 유저 : ' + socket.id);
+
+    // 유저가 room1-send 라는 이름으로 메세지를 서버로 보내오면 동작하는 이벤트 리스너
+    socket.on('room1-send', function(data) { 
+
+        // 유저가 room1 채팅방 입장 요청을 하면 유저에게 채팅방도 생성해주고 "room1 에 입장한 유저들에게만" 전송됨
+        io.to('room1').emit('broadcast', data);
+    });
+
+    // socket.ejs 에서 유저가 서버에 메세지 보내기 버튼을 누르면 그 값을 받아와서 출력
+    // 유저가 joinroom 라는 이름으로 메세지를 서버로 보내오면 동작하는 이벤트 리스너
+    // 보내온 데이터는 data 파라미터에 있음
+    socket.on('joinroom', function(data) { 
+
+        // 유저가 room1 채팅방 입장 요청을 하면 유저에게 채팅방도 생성해주고 입장시켜줌
+        socket.join('room1');
+    });
+
+    // socket.ejs 에서 유저가 서버에 메세지 보내기 버튼을 누르면 그 값을 받아와서 출력
+    // 유저가 user-send 라는 이름으로 메세지를 서버로 보내오면 동작하는 이벤트 리스너
+    // 보내온 데이터는 data 파라미터에 있음
+    socket.on('user-send', function(data) { 
+        console.log(data); // 유저가 보내온 데이터
+        // io.emit() 접속한 모든 유저에게 메세지를 똑같이 보내줌 broadcast 한다 라는 관습적인 의미
+        // 접속자간에 단체 채팅방 완성임.
+        io.emit('broadcast', data);
+
+        // 아래 로직이면 socket.id 를 가진 유저한테만 보낼 수 있음
+        // socket.ejs 에 접속한 유저 정보가 socket 파라미터에 담겨있음
+        // io.to(socket.id).emit('broadcast', data);
+    });
+
 });
 
 app.get('/', (req, res) => {
@@ -368,6 +417,8 @@ app.post('/message', loginChk, function(req, res) {
 
 // get 요청 시 URL 파라미터 query string 을 사용하여 서버로 데이터 전송 
 // 현재는 채팅방 접속시 메세지들 한번 찾아서 보내고 끝임. 새로운 메세지를 보내면 바로 출력이 안됨
+// SSE 방식은 서버가 유저에게 일방적 통신 (아래 로직은 이방법을 사용)
+// WebSocket 은 서버와 유저간에 양방향 통신 => socket.io 라이브러리 설치. 접속한 모든 사람이 메세지 주고 받을 수 있는 단체 채팅방
 app.get('/message/:id', loginChk, function(req, res) {
     
     // Header 를 이런식으로 수정해주세요
@@ -377,7 +428,7 @@ app.get('/message/:id', loginChk, function(req, res) {
     res.writeHead(200, {
         "Connection": "keep-alive",
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache"
     });
     // res.setHeader('Connection', 'keep-alive');
     // res.setHeader('Content-Type', 'text/event-stream');

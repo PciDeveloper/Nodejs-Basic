@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="/public/main.css">
+    <title>채팅방</title>
+  </head>
+  <body>
+    
+    
+
+      <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+      <!-- socket.io 사용하려면 npm install socket.io 했을 때 버전이랑 같아야함 package.json에 있음-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.js" integrity="sha512-xbQU0+iHqhVt7VIXi6vBJKPh3IQBF5B84sSHdjKiSccyX/1ZI7Vnkt2/8y8uruj63/DVmCxfUNohPNruthTEQA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <div>채팅방</div>
+        <input id="input1">
+        <div id="content"></div>
+        <button id="send">서버에 메세지 보내기</button>
+        <button id="room1">채팅방 room1 입장</button>
+        <button id="room1-send">채팅방 room1 에서 채팅하기</button>
+
+      <script>
+        var socket = io(); // web socket 접속
+
+        $('#room1-send').on('click', function() {
+            // socket 으로 GET/POST 요청을 대체 가능함
+            // 서버에 메세지 보내고싶을 때는 정해진 방법 emit('어떤이름으로?', '어떤데이터메세지?') 키 벨류 데이터를 넣어주면 됨
+            socket.emit('room1-send', '반가워 채팅방 room1 사람들아'); 
+        });
+
+        $('#room1').on('click', function() {
+            // socket 으로 GET/POST 요청을 대체 가능함
+            // 서버에 메세지 보내고싶을 때는 정해진 방법 emit('어떤이름으로?', '어떤데이터메세지?') 키 벨류 데이터를 넣어주면 됨
+            socket.emit('joinroom', '채팅방 입장 시켜주세요'); 
+        });
+
+        $('#send').on('click', function() {
+            // socket 으로 GET/POST 요청을 대체 가능함
+            // 서버에 메세지 보내고싶을 때는 정해진 방법 emit('어떤이름으로?', '어떤데이터메세지?') 키 벨류 데이터를 넣어주면 됨
+            socket.emit('user-send', $('#input1').val());
+        });
+
+        socket.on('broadcast', function(data) { // 서버에서 온 메세지를 수신
+            // 서버에서 온 메세지를 가지고 div 로 보여줌. 시크릿 새창 열고 테스트해보면 단체 톡방처럼 구현 했음
+            $('#content').append('<div>' + data + '</div>');
+        });
+      </script>
+      
+      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
+  </body>
+</html>
