@@ -35,6 +35,8 @@
                 <ul class="list-group chat-content">
                   <li><span class="chat-box">채팅방1 내용</span></li>
                   <li><span class="chat-box">채팅방1 내용</span></li>
+                  <li><span class="chat-box">채팅방1 내용</span></li>
+                  <li><span class="chat-box">채팅방1 내용</span></li>
                   <li><span class="chat-box mine">채팅방1 내용</span></li>
                 </ul>
               <div class="input-group">
@@ -51,12 +53,13 @@
 
         var 지금누른채팅방id;
         var eventSource;
-        $('.list-group-item').click(function() { // 채팅방 중 하나를 누르면 ~
+        $('.list-group-item').on('click', function() { // 채팅방 중 하나를 누르면 ~
             지금누른채팅방id = this.dataset.id; // this => 지금 클릭 이벤트 동작하는 곳
+            
             $('.chat-content').html(''); // 다른 채팅방 누를때마다 내용을 비워주세요
 
             if(eventSource != undefined) { // eventSource 가 undefined 가 아니면
-              eventSource.close(); // 채팅방 나가기
+              eventSource.close() // 채팅방 나가기
             }
 
             // 유저가 데이터 수신하는 방법은 new EventSource('/경로')
@@ -71,8 +74,8 @@
               // 문자열로 넘어온 데이터 "" 따옴표를 다시 제거 JSON.parse
               // object, array 자료들 깨지지 않게 전달
               var 가져온거 = JSON.parse(e.data);
-              가져온거.forEach(function(i) { // 가져온거 데이터 변수 i 갯수 만큼 반복문
-                $('.chat-content').append('<li><span class="chat-box">' + i.content + '</span></li>'); // i 변수안에 content 내용 출력
+              가져온거.forEach(function(i) { // 위에 가져온 데이터가 e.data 에 있고 i 는 가져온거에 들어있는 하나하나의 데이터임. i 갯수 만큼 반복문
+                $('.chat-content').append('<li><span class="chat-box">' + i.content + '</span></li>') // i 변수안에 content 내용 출력
               });
 
             });

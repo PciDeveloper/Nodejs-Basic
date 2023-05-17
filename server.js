@@ -138,7 +138,7 @@ passport.use(new LocalStrategy({
     passReqToCallback : false,
 }, function(입력한아이디, 입력한비밀번호, done) {
     console.log(입력한아이디, 입력한비밀번호);
-    db.collection('member').findOne( { id : 입력한아이디 }, function(err, result) {
+    db.collection('login').findOne( { id : 입력한아이디 }, function(err, result) {
         if (err) return done(err);
         if (!result) return done(null, false, { message : '존재하지 않는 회원입니다.' } ); // 데이터가 일치하지 않을 때에는 두번째 파라미터에 false 넣어야 함
         if (입력한비밀번호 == result.pw) { // db 에 아이디가 있으면, 해당 아이디와 db의 비밀번호가 맞는지 체크
@@ -161,7 +161,7 @@ passport.serializeUser(function(user, done) {
 // db 에서 위에 있는 user.id 로 유저를 찾은 다음 그 정보를 {} 에 넣음
 // user.id == 아이디 동일한 데이터
 passport.deserializeUser(function(아이디, done) {
-    db.collection('member').findOne( { id : 아이디 }, function(err, result) {
+    db.collection('login').findOne( { id : 아이디 }, function(err, result) {
         done(null, result);
     });
 });
@@ -404,7 +404,8 @@ app.get('/message/:id', loginChk, function(req, res) {
     const collection = db.collection('message'); // 컬렉션을 정해주고
     const changeStream = collection.watch(pipeline); // watch 함수를 붙여주면 mongodb 가 실시간으로 감시해줌
     changeStream.on('change', (result) => { // db 에 변동 사항이 생기면 ~
-
+        
+        console.log('메세지 변동사항 : ' + JSON.stringify([result.fullDocument]));
         // 응답해주세요 ~ 데이터를 보낼 때 데이터가 [{}, {}, {}] 오브젝트 자료였으므로 형식을 갖춰서 보냄
         res.write('event : test\n');
         res.write('data : ' + JSON.stringify([result.fullDocument]) + '\n\n');
