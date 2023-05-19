@@ -1,5 +1,8 @@
 
 // 서버 구동 => 터미널에서 nodemon server.js
+// mongo atlas => https://cloud.mongodb.com/v2/63fc3cad917d2266e84c05c1#/overview
+// mongo atlals 접속 후 왼쪽 Project0 선택 되어있는지 확인 후 database 클릭 => Browse Collections 클릭
+
 // app.use(미들웨어) => 요청 - 응답 중간에 무언가 실행되는 코드
 // 즉, 미들웨어를 사용하고 싶을 때. 전역 미들웨어
 const dotenv = require('dotenv').config();
