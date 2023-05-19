@@ -1,4 +1,5 @@
 
+// 서버 구동 => 터미널에서 nodemon server.js
 // app.use(미들웨어) => 요청 - 응답 중간에 무언가 실행되는 코드
 // 즉, 미들웨어를 사용하고 싶을 때. 전역 미들웨어
 const dotenv = require('dotenv').config();
@@ -379,6 +380,7 @@ app.get('/image/:imageName', function(req, res) {
 
 // list.ejs 에서 /chatroom post 요청이 있을 시
 const { ObjectId } = require('mongodb');
+const path = require('path');
 app.post('/chatroom', loginChk, function(req, res) {
     var 저장할거 = {
         title : '무슨무슨채팅방',
@@ -468,3 +470,18 @@ app.get('/message/:id', loginChk, function(req, res) {
 // 라우트를 나누어서 관리하면 유지보수에 용이함
 app.use('/shop', require('./routes/shop.js'));
 app.use('/board/sub', require('./routes/board.js'));
+
+// ============== 마지막으로 react 연동하는 방법 ==============
+// 1. nodejs 검색 후 설치
+// 2. server 작업 폴더 생성후 vscode 폴더 오픈
+// 3. server.js 만들고 코드 복붙
+// const express = require('express');
+// const app = express();
+// const path = require('path');
+// app.listen(8080, function() {
+//     console.log('listening on 8080');
+// });
+// vscode 터미널 열고 아래와 같이 설치
+// 1. npm init -y
+// 2. npm install express
+// ==========================================================
