@@ -1,5 +1,5 @@
 
-// 서버 구동 => 터미널에서 nodemon server.js
+// 서버 구동 => 터미널에서 nodemon server.js localhost:8080
 // mongo atlas => https://cloud.mongodb.com/v2/63fc3cad917d2266e84c05c1#/overview
 // mongo atlals 접속 후 왼쪽 Project0 선택 되어있는지 확인 후 database 클릭 => Browse Collections 클릭
 
