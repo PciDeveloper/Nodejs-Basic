@@ -225,7 +225,7 @@ app.get('/write', (req, res) => {
 
 // collection 은 필요할 때 가져다 쓰면 됨
 // post 요청으로 서버에 데이터 전송하고 싶으면 bodyParser 라이브러리 install
-app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /insert 요청이 있을 시
+app.post('/write', (req, res) => { // form 태그에서 post 방식으로 /write 요청이 있을 시
     res.send('전송 완료'); // 전송완료라는 응답을 해줌
     console.log(req.body.title); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = title
     console.log(req.body.date); // req.body 요청했던 form 태그에 들어간 데이터 수신받은 것 중에 name = date
